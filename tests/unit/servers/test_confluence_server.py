@@ -146,20 +146,21 @@ def test_confluence_mcp(mock_confluence_fetcher, mock_base_confluence_config):
     )
 
     # Create and configure the sub-MCP for Confluence tools
+    # Use .fn to get underlying function from FunctionTool objects
     confluence_sub_mcp = FastMCP(name="TestConfluenceSubMCP")
-    confluence_sub_mcp.tool()(search)
-    confluence_sub_mcp.tool()(get_page)
-    confluence_sub_mcp.tool()(get_page_children)
-    confluence_sub_mcp.tool()(get_comments)
-    confluence_sub_mcp.tool()(add_comment)
-    confluence_sub_mcp.tool()(get_labels)
-    confluence_sub_mcp.tool()(add_label)
-    confluence_sub_mcp.tool()(create_page)
-    confluence_sub_mcp.tool()(update_page)
-    confluence_sub_mcp.tool()(delete_page)
-    confluence_sub_mcp.tool()(search_user)
+    confluence_sub_mcp.tool()(search.fn)
+    confluence_sub_mcp.tool()(get_page.fn)
+    confluence_sub_mcp.tool()(get_page_children.fn)
+    confluence_sub_mcp.tool()(get_comments.fn)
+    confluence_sub_mcp.tool()(add_comment.fn)
+    confluence_sub_mcp.tool()(get_labels.fn)
+    confluence_sub_mcp.tool()(add_label.fn)
+    confluence_sub_mcp.tool()(create_page.fn)
+    confluence_sub_mcp.tool()(update_page.fn)
+    confluence_sub_mcp.tool()(delete_page.fn)
+    confluence_sub_mcp.tool()(search_user.fn)
 
-    test_mcp.mount("confluence", confluence_sub_mcp)
+    test_mcp.mount(confluence_sub_mcp, prefix="confluence")
 
     return test_mcp
 
@@ -200,20 +201,21 @@ def no_fetcher_test_confluence_mcp(mock_base_confluence_config):
     )
 
     # Create and configure the sub-MCP for Confluence tools
+    # Use .fn to get underlying function from FunctionTool objects
     confluence_sub_mcp = FastMCP(name="NoFetcherTestConfluenceSubMCP")
-    confluence_sub_mcp.tool()(search)
-    confluence_sub_mcp.tool()(get_page)
-    confluence_sub_mcp.tool()(get_page_children)
-    confluence_sub_mcp.tool()(get_comments)
-    confluence_sub_mcp.tool()(add_comment)
-    confluence_sub_mcp.tool()(get_labels)
-    confluence_sub_mcp.tool()(add_label)
-    confluence_sub_mcp.tool()(create_page)
-    confluence_sub_mcp.tool()(update_page)
-    confluence_sub_mcp.tool()(delete_page)
-    confluence_sub_mcp.tool()(search_user)
+    confluence_sub_mcp.tool()(search.fn)
+    confluence_sub_mcp.tool()(get_page.fn)
+    confluence_sub_mcp.tool()(get_page_children.fn)
+    confluence_sub_mcp.tool()(get_comments.fn)
+    confluence_sub_mcp.tool()(add_comment.fn)
+    confluence_sub_mcp.tool()(get_labels.fn)
+    confluence_sub_mcp.tool()(add_label.fn)
+    confluence_sub_mcp.tool()(create_page.fn)
+    confluence_sub_mcp.tool()(update_page.fn)
+    confluence_sub_mcp.tool()(delete_page.fn)
+    confluence_sub_mcp.tool()(search_user.fn)
 
-    test_mcp.mount("confluence", confluence_sub_mcp)
+    test_mcp.mount(confluence_sub_mcp, prefix="confluence")
 
     return test_mcp
 

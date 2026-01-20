@@ -50,15 +50,22 @@ class MockEnvironment:
             "JIRA_URL",
             "JIRA_USERNAME",
             "JIRA_API_TOKEN",
+            "JIRA_PERSONAL_TOKEN",
             "CONFLUENCE_URL",
             "CONFLUENCE_USERNAME",
             "CONFLUENCE_API_TOKEN",
+            "CONFLUENCE_PERSONAL_TOKEN",
+            "BITBUCKET_URL",
+            "BITBUCKET_USERNAME",
+            "BITBUCKET_API_TOKEN",
+            "BITBUCKET_PERSONAL_TOKEN",
             "ATLASSIAN_OAUTH_CLIENT_ID",
             "ATLASSIAN_OAUTH_CLIENT_SECRET",
             "ATLASSIAN_OAUTH_REDIRECT_URI",
             "ATLASSIAN_OAUTH_SCOPE",
             "ATLASSIAN_OAUTH_CLOUD_ID",
             "ATLASSIAN_OAUTH_ENABLE",
+            "ATLASSIAN_OAUTH_ACCESS_TOKEN",
         ]
 
         # Remove auth vars from environment
