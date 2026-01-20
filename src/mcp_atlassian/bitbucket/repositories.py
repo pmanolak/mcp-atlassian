@@ -246,3 +246,53 @@ class RepositoriesMixin:
             raise
 
         return files
+
+    def create_repository(
+        self: "BitbucketClient",
+        project_key: str,
+        repository_slug: str,
+        description: str | None = None,
+        forkable: bool = True,
+        public: bool = False,
+    ) -> BitbucketRepository:
+        """Create a new repository in a project.
+
+        Args:
+            project_key: The project key (e.g., 'PROJ' or '~username' for personal)
+            repository_slug: The repository slug/name
+            description: Optional repository description
+            forkable: Whether the repository can be forked (default: True)
+            public: Whether the repository is public (default: False)
+
+        Returns:
+            BitbucketRepository object representing the created repository
+
+        Raises:
+            ValueError: If repository creation fails
+        """
+        try:
+            repo_data = self.bitbucket.create_repo(
+                project_key,
+                repository_slug,
+                forkable=forkable,
+                is_private=not public,
+            )
+            if not repo_data:
+                raise ValueError(
+                    f"Failed to create repository '{repository_slug}' in '{project_key}'"
+                )
+
+            # If description is provided, update the repository
+            if description:
+                repo_data = self.bitbucket.update_repo(
+                    project_key,
+                    repository_slug,
+                    description=description,
+                )
+
+            return BitbucketRepository.from_api_response(repo_data)
+        except Exception as e:
+            logger.error(
+                f"Error creating repository {project_key}/{repository_slug}: {e}"
+            )
+            raise

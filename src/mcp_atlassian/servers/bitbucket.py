@@ -493,3 +493,84 @@ async def add_pull_request_comment(
             "pull_request_id": pull_request_id,
         }
     return json.dumps(result, indent=2, ensure_ascii=False)
+
+
+@bitbucket_mcp.tool(tags={"bitbucket", "write"})
+@check_write_access
+async def create_repository(
+    ctx: Context,
+    project_key: Annotated[
+        str,
+        Field(
+            description=(
+                "The project key (e.g., 'PROJ') or personal project key "
+                "(e.g., '~username' for personal repositories)"
+            )
+        ),
+    ],
+    repository_slug: Annotated[
+        str,
+        Field(
+            description=(
+                "The repository slug/name. Use lowercase with hyphens "
+                "(e.g., 'my-new-repo')"
+            )
+        ),
+    ],
+    description: Annotated[
+        str | None,
+        Field(
+            description="Optional description for the repository",
+            default=None,
+        ),
+    ] = None,
+    forkable: Annotated[
+        bool,
+        Field(
+            description="Whether the repository can be forked (default: True)",
+            default=True,
+        ),
+    ] = True,
+    public: Annotated[
+        bool,
+        Field(
+            description="Whether the repository is public (default: False)",
+            default=False,
+        ),
+    ] = False,
+) -> str:
+    """Create a new Bitbucket repository.
+
+    Args:
+        ctx: The FastMCP context.
+        project_key: The project key or personal project key (~username).
+        repository_slug: The repository slug/name.
+        description: Optional repository description.
+        forkable: Whether the repository can be forked.
+        public: Whether the repository is public.
+
+    Returns:
+        JSON string representing the created repository.
+
+    Raises:
+        ValueError: If in read-only mode or repository creation fails.
+    """
+    bitbucket = await get_bitbucket_fetcher(ctx)
+    try:
+        repo = bitbucket.create_repository(
+            project_key,
+            repository_slug,
+            description=description,
+            forkable=forkable,
+            public=public,
+        )
+        result = {"success": True, "repository": repo.to_simplified_dict()}
+    except Exception as e:
+        logger.error(f"Error creating repository {project_key}/{repository_slug}: {e}")
+        result = {
+            "success": False,
+            "error": str(e),
+            "project_key": project_key,
+            "repository_slug": repository_slug,
+        }
+    return json.dumps(result, indent=2, ensure_ascii=False)
