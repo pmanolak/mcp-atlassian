@@ -127,4 +127,22 @@ def get_available_services() -> dict[str, bool | None]:
             "Jira is not configured or required environment variables are missing."
         )
 
-    return {"confluence": confluence_is_setup, "jira": jira_is_setup}
+    # Bitbucket Server/Data Center detection
+    bitbucket_url = os.getenv("BITBUCKET_URL")
+    bitbucket_is_setup = False
+    if bitbucket_url:
+        # Bitbucket Server/DC - PAT or basic auth
+        if os.getenv("BITBUCKET_PERSONAL_TOKEN") or (
+            os.getenv("BITBUCKET_USERNAME") and os.getenv("BITBUCKET_API_TOKEN")
+        ):
+            bitbucket_is_setup = True
+            logger.info(
+                "Using Bitbucket Server/Data Center authentication (PAT or Basic Auth)"
+            )
+
+    if not bitbucket_is_setup:
+        logger.info(
+            "Bitbucket is not configured or required environment variables are missing."
+        )
+
+    return {"confluence": confluence_is_setup, "jira": jira_is_setup, "bitbucket": bitbucket_is_setup}

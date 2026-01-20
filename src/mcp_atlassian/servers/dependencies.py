@@ -13,6 +13,7 @@ from fastmcp import Context
 from fastmcp.server.dependencies import get_http_request
 from starlette.requests import Request
 
+from mcp_atlassian.bitbucket import BitbucketConfig, BitbucketFetcher
 from mcp_atlassian.confluence import ConfluenceConfig, ConfluenceFetcher
 from mcp_atlassian.jira import JiraConfig, JiraFetcher
 from mcp_atlassian.servers.context import MainAppContext
@@ -381,4 +382,95 @@ async def get_confluence_fetcher(ctx: Context) -> ConfluenceFetcher:
     logger.error("Confluence configuration could not be resolved.")
     raise ValueError(
         "Confluence client (fetcher) not available. Ensure server is configured correctly."
+    )
+
+
+async def get_bitbucket_fetcher(ctx: Context) -> BitbucketFetcher:
+    """Returns a BitbucketFetcher instance appropriate for the current request context.
+
+    Bitbucket Server/DC uses simpler auth than Jira/Confluence (no OAuth support),
+    so this implementation is more straightforward.
+
+    Args:
+        ctx: The FastMCP context.
+
+    Returns:
+        BitbucketFetcher instance for the current config.
+
+    Raises:
+        ValueError: If configuration is invalid or not available.
+    """
+    logger.debug(f"get_bitbucket_fetcher: ENTERED. Context ID: {id(ctx)}")
+    try:
+        request: Request = get_http_request()
+        logger.debug(
+            f"get_bitbucket_fetcher: In HTTP request context. Request URL: {request.url}. "
+            f"State.bitbucket_fetcher exists: {hasattr(request.state, 'bitbucket_fetcher') and request.state.bitbucket_fetcher is not None}."
+        )
+        # Use fetcher from request.state if already present
+        if hasattr(request.state, "bitbucket_fetcher") and request.state.bitbucket_fetcher:
+            logger.debug("get_bitbucket_fetcher: Returning BitbucketFetcher from request.state.")
+            return request.state.bitbucket_fetcher
+
+        # Check if user provided PAT via headers
+        user_auth_type = getattr(request.state, "user_atlassian_auth_type", None)
+        if user_auth_type == "pat" and hasattr(request.state, "user_atlassian_token"):
+            user_token = getattr(request.state, "user_atlassian_token", None)
+
+            if user_token:
+                lifespan_ctx_dict = ctx.request_context.lifespan_context  # type: ignore
+                app_lifespan_ctx: MainAppContext | None = (
+                    lifespan_ctx_dict.get("app_lifespan_context")
+                    if isinstance(lifespan_ctx_dict, dict)
+                    else None
+                )
+                if app_lifespan_ctx and app_lifespan_ctx.full_bitbucket_config:
+                    import dataclasses
+
+                    base_config = app_lifespan_ctx.full_bitbucket_config
+                    # Create user-specific config with the provided PAT
+                    user_config = dataclasses.replace(
+                        base_config,
+                        auth_type="pat",
+                        personal_token=user_token,
+                        username=None,
+                        api_token=None,
+                    )
+                    logger.info(
+                        f"Creating user-specific BitbucketFetcher with PAT (token ...{str(user_token)[-8:]})"
+                    )
+                    try:
+                        user_bitbucket_fetcher = BitbucketFetcher(config=user_config)
+                        request.state.bitbucket_fetcher = user_bitbucket_fetcher
+                        return user_bitbucket_fetcher
+                    except Exception as e:
+                        logger.error(
+                            f"get_bitbucket_fetcher: Failed to create user-specific BitbucketFetcher: {e}"
+                        )
+                        raise ValueError(f"Invalid user Bitbucket token or configuration: {e}")
+        else:
+            logger.debug(
+                f"get_bitbucket_fetcher: No user-specific token. Will use global fallback."
+            )
+    except RuntimeError:
+        logger.debug(
+            "Not in an HTTP request context. Attempting global BitbucketFetcher for non-HTTP."
+        )
+
+    # Fallback to global fetcher
+    lifespan_ctx_dict_global = ctx.request_context.lifespan_context  # type: ignore
+    app_lifespan_ctx_global: MainAppContext | None = (
+        lifespan_ctx_dict_global.get("app_lifespan_context")
+        if isinstance(lifespan_ctx_dict_global, dict)
+        else None
+    )
+    if app_lifespan_ctx_global and app_lifespan_ctx_global.full_bitbucket_config:
+        logger.debug(
+            "get_bitbucket_fetcher: Using global BitbucketFetcher from lifespan_context. "
+            f"Global config auth_type: {app_lifespan_ctx_global.full_bitbucket_config.auth_type}"
+        )
+        return BitbucketFetcher(config=app_lifespan_ctx_global.full_bitbucket_config)
+    logger.error("Bitbucket configuration could not be resolved.")
+    raise ValueError(
+        "Bitbucket client (fetcher) not available. Ensure server is configured correctly."
     )
